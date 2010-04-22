@@ -1,0 +1,67 @@
+Oogly - A Data validation idea that just might be ideal!
+
+Oogly is a different approach to data validation, it attempts to simplify and
+centralize data validation rules to ensure DRY (don't repeat yourself) code.
+PLEASE NOTE! It is not the intent of this module to provide validation routines
+but instead to provide simplistic validation flow-control, and promote code
+reuse. I suppose it could be considered a data validation framework.
+
+The following is an example of that...
+
+    use MyApp::Validation;
+    my $app = MyApp::Validation->new(\%params);
+    if ($app->validate('login', 'password')){
+        ...
+    }
+
+    package MyApp::Validation
+    use Oogly;
+
+    # define a mixin, a sortof template that can be included with other rules
+    # by using the mixin directive
+    mixin 'default' => {
+        required    => 1,
+        min_length  => 4,
+        max_length  => 255
+    };
+
+    # define a data validation rule for parameter `login` using the default
+    # mixin where the `login` must be between 4-255 characters long and have
+    # at least one letter and number
+    field 'login' => {
+        label => 'user login',
+        mixin => 'default',
+        validation => sub {
+            my ($self, $this, $params) = @_;
+            my ($name, $value) = ($this->{name}, $this->{value});
+            $self->error($this, "field $name must contain at least one letter and number")
+                if ($value !~ /[a-zA-Z]/ && $value !~ /[0-9]/);
+        }
+    };
+
+    # define a data validation rule for parameter `password` using the
+    # previously defined field `login` as the mixin (template)
+    field 'password' => {
+        mixin_field => 'login',
+        label => 'user password'
+    };
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+  perl Makefile.PL
+  make
+  make test
+  make install
+
+REPOSITORY
+
+    http://github.com/awnstudio/Oogly/
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2010 Al Newkirk
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.

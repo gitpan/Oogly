@@ -1,0 +1,11 @@
+LICENSE
+MANIFEST
+META.yml
+Makefile.PL
+Oogly.kpf
+README
+dist.ini
+lib/Oogly.pm
+t/00-load.t
+t/01-directives.t
+t/99-misc.t

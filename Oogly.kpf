@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Komodo Project File - DO NOT EDIT -->
+<project id="8cb7d87e-744e-4ce2-be15-3ae5716293a8" kpf_version="4" name="Oogly.kpf">
+<preference-set idref="8cb7d87e-744e-4ce2-be15-3ae5716293a8">
+  <boolean id="import_live">1</boolean>
+</preference-set>
+<preference-set idref="8cb7d87e-744e-4ce2-be15-3ae5716293a8/README">
+</preference-set>
+<preference-set idref="8cb7d87e-744e-4ce2-be15-3ae5716293a8/t/99-misc.t">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <long id="debugger.io-port">9011</long>
+  <string id="documentRoot"></string>
+  <string id="executable-params">-I C:\Oogly\lib</string>
+  <string relative="path" id="filename">t/99-misc.t</string>
+  <string id="getparams"></string>
+  <string id="language">Perl</string>
+  <string id="mpostparams"></string>
+  <string id="params"></string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">0</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+  <string id="warnings">enabled</string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+<preference-set idref="a7a31bd5-7b92-4e4a-96fd-a40ac6e14860">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <long id="debugger.io-port">9011</long>
+  <string id="documentRoot"></string>
+  <string id="executable-params">-T -I C:\Oogly\lib</string>
+  <string relative="path" id="filename">t/01-directives.t</string>
+  <string id="getparams"></string>
+  <string id="language">Perl</string>
+  <string id="mpostparams"></string>
+  <string id="params"></string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">0</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+  <string id="warnings">enabled</string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+<preference-set idref="dc75bff6-361f-4c94-9afe-3bda461843f6">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <long id="debugger.io-port">9011</long>
+  <string id="documentRoot"></string>
+  <string id="executable-params"></string>
+  <string relative="path" id="filename">t/01-directives.t</string>
+  <string id="getparams"></string>
+  <string id="language">Perl</string>
+  <string id="mpostparams"></string>
+  <string id="params"></string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">0</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+  <string id="warnings">enabled</string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+<preference-set idref="eead1862-4d70-43b7-84c2-875671ebdbf4">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <long id="debugger.io-port">9011</long>
+  <string id="documentRoot"></string>
+  <string id="executable-params">-T -I C:\Oogly\lib</string>
+  <string relative="path" id="filename">t/01-directives.t</string>
+  <string id="getparams"></string>
+  <string id="language">Perl</string>
+  <string id="mpostparams"></string>
+  <string id="params"></string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">0</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+  <string id="warnings">enabled</string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+<preference-set idref="efc07517-fad2-41c7-83bb-2d1d2ba2d1a5">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <long id="debugger.io-port">9011</long>
+  <string id="documentRoot"></string>
+  <string id="executable-params">-T -I C:\Oogly\lib</string>
+  <string relative="path" id="filename">t/01-directives.t</string>
+  <string id="getparams"></string>
+  <string id="language">Perl</string>
+  <string id="mpostparams"></string>
+  <string id="params"></string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">0</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+  <string id="warnings">enabled</string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+</project>
