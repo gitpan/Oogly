@@ -1,7 +1,7 @@
 ---
 abstract: 'Oogly - A Data validation idea that just might be ideal!'
 author:
-  - 'Al Newkirk <awnstudio@cpan.org>'
+  - 'Al Newkirk <awncorp@cpan.org>'
 build_requires: {}
 configure_requires:
   ExtUtils::MakeMaker: 6.31
@@ -13,4 +13,4 @@ meta-spec:
 name: Oogly
 recommends: {}
 requires: {}
-version: 0.01
+version: 0.02

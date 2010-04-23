@@ -17,11 +17,11 @@ my %WriteMakefileArgs = (
                        'CONFIGURE_REQUIRES' => {
                                                  'ExtUtils::MakeMaker' => '6.31'
                                                },
-                       'AUTHOR' => 'Al Newkirk <awnstudio@cpan.org>',
+                       'AUTHOR' => 'Al Newkirk <awncorp@cpan.org>',
                        'BUILD_REQUIRES' => {},
                        'ABSTRACT' => 'Oogly - A Data validation idea that just might be ideal!',
                        'EXE_FILES' => [],
-                       'VERSION' => '0.01',
+                       'VERSION' => '0.02',
                        'PREREQ_PM' => {},
                        'LICENSE' => 'perl'
                      );

@@ -1,23 +1,68 @@
 #!perl -T
 package Test::Validation;
-use Test::More tests => 3;
+use Test::More tests => 9;
 
 BEGIN {
 	use_ok( 'Oogly' );
 }
 
-field 'some_val' => {
-    required => 1,
+field 'test1' => {
+	required => 1,
+};
+
+field 'test2' => {
+	mixin_field => 'test1',
+	error => 'another value is always required'
+};
+
+field 'test3' => {
+	regex => '^\d+$'
+};
+
+field 'test4' => {
+	label => 'test4',
+	required => 1,
+	min_length => 2,
+	max_length => 3
 };
 
 # no params failure
-eval { my $tv0 = Test::Validation->new(); };
+eval { Test::Validation->new() };
 ok($@, "no parameters failure");
 
-# test required param
-my $tv1 = Test::Validation->new({some_val => ''});
-$tv1->validate('some_val');
-ok((($tv1->errors('some_val'))[0]) eq 'parameter `some_val` is required',
+# test required directive
+my $tv = Test::Validation->new({ 'test1' => undef });
+$tv->validate('test1');
+ok(($tv->errors('test1'))[0] eq 'parameter `test1` is required',
    "required field test");
+
+# test error directive
+$tv = Test::Validation->new({});
+$tv->validate('test2');
+ok((($tv->errors('test2'))[0]) eq 'another value is always required',
+   "custom field error test");
+
+# test regex directive
+$tv = Test::Validation->new({ test3 => 'this' });
+$tv->validate('test3');
+ok(scalar($tv->errors()), "regex failure test");
+$tv = Test::Validation->new({ test3 => 100 });
+$tv->validate('test3');
+ok(!scalar($tv->errors()), "regex success test");
+
+# test min_length max_length
+$tv = Test::Validation->new({ test4 => 47683463763864 });
+$tv->validate('test4');
+ok(($tv->errors())[0] eq "test4 cannot be greater than 3 characters",
+   "maximum length test");
+$tv = Test::Validation->new({ test4 => 1 });
+$tv->validate('test4');
+ok(($tv->errors())[0] eq "test4 must contain at least 2 characters",
+   "minimum length test");
+
+# test no error count
+$tv = Test::Validation->new({ test1 => 1 });
+$tv->validate('test1');
+ok(!scalar($tv->errors()), "error count test");
 
 1;

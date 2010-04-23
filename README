@@ -48,12 +48,20 @@ The following is an example of that...
 
 INSTALLATION
 
-To install this module, run the following commands:
+To install this module using code from CPAN,
+run the following commands
 
-  perl Makefile.PL
-  make
-  make test
-  make install
+	perl Makefile.PL
+	make
+	make test
+	make install
+
+To install this module using code from the git repository,
+run the following commands (Dist::Zilla required):
+
+  dzil build
+  cd Oogly-#.##
+  cpan .
 
 REPOSITORY
 

@@ -1,6 +1,6 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.01';
+  $Oogly::VERSION = '0.02';
 }
 use strict;
 use warnings;
@@ -56,16 +56,20 @@ sub new {
     }
     # validate field directives
     foreach (keys %{$self->{fields}}) {
-        $self->check_field($_, $self->{fields}->{$_});
-        # check for and process mixin directives
-        $self->use_mixin($_, $self->{fields}->{$_}->{mixin})
-            if $self->{fields}->{$_}->{mixin};
+        unless ($_ eq 'errors') {
+            $self->check_field($_, $self->{fields}->{$_});
+            # check for and process mixin directives
+            $self->use_mixin($_, $self->{fields}->{$_}->{mixin})
+                if $self->{fields}->{$_}->{mixin};
+        }
     }
     # check for and process a mixin_field directive
     foreach (keys %{$self->{fields}}) {
-        $self->use_mixin_field($self->{fields}->{$_}->{mixin_field}, $_)
-            if $self->{fields}->{$_}->{mixin_field}
-            && $self->{fields}->{$self->{fields}->{$_}->{mixin_field}};
+        unless ($_ eq 'errors') {
+            $self->use_mixin_field($self->{fields}->{$_}->{mixin_field}, $_)
+                if $self->{fields}->{$_}->{mixin_field}
+                && $self->{fields}->{$self->{fields}->{$_}->{mixin_field}};
+        }
     }
     return $self;
 }
@@ -110,8 +114,17 @@ sub error {
         # set error message
         my ($field, $error_msg) = @params;
         if (ref($field) eq "HASH" && (!ref($error_msg) && $error_msg)) {
-            push @{$self->{fields}->{$field->{name}}->{errors}}, $error_msg;
-            push @{$self->{errors}}, $error_msg;
+            if (defined $self->{fields}->{$field->{name}}->{error}) {
+                push @{$self->{fields}->{$field->{name}}->{errors}},
+                    $self->{fields}->{$field->{name}}->{error};
+                push @{$self->{errors}}, $error_msg unless
+                    int scalar grep $self->{fields}->{$field->{name}}->{error},
+                        @{$self->{fields}->{errors}};
+            }
+            else {
+                push @{$self->{fields}->{$field->{name}}->{errors}}, $error_msg;
+                push @{$self->{errors}}, $error_msg;
+            }
         }
         else {
             die "Can't set error without proper field and error message data, " .
@@ -163,8 +176,11 @@ sub check_field {
         mixin => sub {1},
         mixin_field => sub {1},
         validation => sub {1},
-        errors => sub{1},
-        label => sub{1},
+        errors => sub {1},
+        label => sub {1},
+        error => sub {1},
+        value => sub {1},
+        name => sub {1},
         
         required   => sub {1},
         min_length => sub {1},
@@ -173,7 +189,6 @@ sub check_field {
         ref_type => sub {1},
         regex => sub {1},
     };
-    
     foreach (keys %{$spec}) {
         if (!defined $directives->{$_}) {
             die "The `$_` directive supplied by the `$field` field is not supported";
@@ -272,48 +287,56 @@ sub basic_validate {
     
     # does field have a label, if not use field name
     my $name  = $this->{label} ? $this->{label} : "parameter `$field`";
-    my $value = $this->{value} || "";
+    my $value = $this->{value};
     
     # check if required
-    if ($this->{required} && !$value) {
+    if ($this->{required} && (! defined $value || $value eq '')) {
         $self->error($this, "$name is required");
     }
     
-    # check min character length
-    if ($this->{min_length}) {
-        if (length($value) < $this->{min_length}){
-            $self->error($this, "$name must contain at least " .
-                $this->{min_length} . " characters");
-        }
-    }
+    if ($this->{required} || $value) {
     
-    # check max character length
-    if ($this->{max_length}) {
-        if (length($value) > $this->{max_length}){
-            $self->error($this, "$name cannot be greater than " .
-                $this->{min_length} . " characters");
+        # check min character length
+        if ($this->{min_length}) {
+            if (length(int($value)) < $this->{min_length}){
+                $self->error($this, "$name must contain at least " .
+                    $this->{min_length} .
+                    (int($this->{min_length}) > 1 ?
+                     " characters" : " character"));
+            }
         }
-    }
-    
-    # check reference type
-    if ($this->{ref_type}) {
-        unless (lc(ref($value)) eq lc($this->{ref_type})) {
-            $self->error($this, "$name is not being stored as a " .
-                $this->{ref_type} . " reference");
-        }
-    }
-    
-    # check data type
-    if ($this->{data_type}) {
         
-    }
-    
-    # check against regex
-    if ($this->{regex}) {
-        unless ($value =~ $this->{regex}) {
-            $self->error($this, "$name failed regular expression testing " .
-                "using `$value`");
+        # check max character length
+        if ($this->{max_length}) {
+            if (length(int($value)) > $this->{max_length}){
+                $self->error($this, "$name cannot be greater than " .
+                    $this->{max_length} .
+                    (int($this->{max_length}) > 1 ?
+                     " characters" : " character"));
+            }
         }
+        
+        # check reference type
+        if ($this->{ref_type}) {
+            unless (lc(ref($value)) eq lc($this->{ref_type})) {
+                $self->error($this, "$name is not being stored as a " .
+                    $this->{ref_type} . " reference");
+            }
+        }
+        
+        # check data type
+        if ($this->{data_type}) {
+            
+        }
+        
+        # check against regex
+        if ($this->{regex}) {
+            unless ($value =~ $this->{regex}) {
+                $self->error($this, "$name failed regular expression testing " .
+                    "using `$value`");
+            }
+        }
+    
     }
 }
 
@@ -328,76 +351,10 @@ Oogly - Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.01
+version 0.02
 
-=head1 METHODS
+=head1 SYNOPSIS
 
-=head2 new
-The new method instantiates a new Oogly or Oogly package instance.
-
-=head2 field
-The field function defines the validation rules for the specified parameter it
-is named after. e.g. field 'some_data' => {...}, validates against the value of 
-the hash reference where the key is `some_data`.
-
-    field 'some_param' => {
-        mixin => 'default',
-        validation => sub {
-            my ($v, $this, $params) = @_;
-            $v->error($this, "...")
-                if ...
-        }
-    };
-
-=head2 mixin
-The mixin function defines validation rule templates to be later reused by
-more specifically defined fields.
-
-    mixin 'default' => {
-        required    => 1,
-        min_length  => 4,
-        max_length  => 255
-    };
-
-=head2 error
-The error function is used to set and/or retrieve errors encountered or set
-during validation. The error function with no parameters returns the error
-message arrayref which can be used to output a single concatenated error message
-a with delimeter.
-
-    $self->error() # returns an array of errors
-    join '<br/>', $self->error(); # html-break delimeted errors
-    $self->error('some_param'); # show parameter-specific error messages arrayref
-    $self->error($this, "$name must conform ..."); # set error, see `field` function
-
-=head2 errors
-The errors function is a synonym for the error function.
-
-=head2 check_mixin
-The check_mixin function is used internally to validate the defined keys and
-values of mixins.
-
-=head2 check_field
-The check_field function is used internally to validate the defined keys and
-values of fields.
-
-=head2 use_mixin
-The use_mixin function sequentially applies defined mixin parameteres
-(as templates)to the specified field.
-
-=head2 use_mixin_field
-The use_mixin_field function copies the properties (directives) of a specified
-field to the target field processing copied mixins along the way.
-
-=head2 validate
-The validate function sequentially checks the passed-in field names against their
-defined validation rules and returns undef or 1.
-
-=head2 basic_validate
-The basic_validate function processes the pre-defined contraints e.g.,
-required, min_length, max_length, etc.
-
-=head1 SYNOPSIS 
 Oogly is a different approach to data validation, it attempts to simplify and
 centralize data validation rules to ensure DRY (don't repeat yourself) code.
 PLEASE NOTE! It is not the intent of this module to provide validation routines 
@@ -442,9 +399,140 @@ reuse. The following is an example of that...
         label => 'user password'
     };
 
+=head1 METHODS
+
+=head2 new
+
+The new method instantiates a new Oogly or Oogly package instance.
+
+=head2 field
+
+The field function defines the validation rules for the specified parameter it
+is named after. e.g. field 'some_data' => {...}, validates against the value of 
+the hash reference where the key is `some_data`.
+
+    field 'some_param' => {
+        mixin => 'default',
+        validation => sub {
+            my ($v, $this, $params) = @_;
+            $v->error($this, "...")
+                if ...
+        }
+    };
+
+    Fields are comprised of specific directives, those directives are as follows:
+    name: The name of the field (auto set)
+    value: The value of the parameter matching the name of the field (auto set)
+    mixin: The template to be used to copy directives from
+    
+    mixin 'template' => {
+        required => 1
+    };
+    
+    field 'a_field' => {
+        mixin => 'template'
+    }
+    
+    mixin_field: The field to be used as a mixin(template) to copy directives from
+    
+    field 'a_field' => {
+        required => 1,
+        min_length => 2,
+        max_length => 10
+    };
+    
+    field 'b_field' => {
+        mixin_field => 'a_field'
+    };
+    
+    validation: A validation routine that returns true or false
+    
+    field '...' => {
+        validation => sub {
+            my ($self, $field, $all_parameters) = @_;
+            return 1
+        }
+    };
+    
+    errors: The collection of errors encountered during processing (auto set arrayref)
+    label: An alias for the field name, something more human-readable
+    error: A custom error message, displayed instead of the generic ones
+    required : Determines whether the field is required or not, takes 1/0 true of false
+    min_length: Determines the maximum length of characters allowed
+    max_length: Determines the minimum length of characters allowed
+    ref_type: Determines whether the field value is a valid perl reference variable
+    regex: Determines whether the field value passed the regular expression test
+    
+    field 'c_field' => {
+        label => 'a field labeled c',
+        error => 'a field labeled c cannot ',
+        required => 1,
+        min_length => 2,
+        max_length => 25,
+        ref_type => 'array',
+        regex => '^\d+$'
+    };
+
+=head2 mixin
+
+The mixin function defines validation rule templates to be later reused by
+more specifically defined fields.
+
+    mixin 'default' => {
+        required    => 1,
+        min_length  => 4,
+        max_length  => 255
+    };
+
+=head2 error
+
+The error function is used to set and/or retrieve errors encountered or set
+during validation. The error function with no parameters returns the error
+message arrayref which can be used to output a single concatenated error message
+a with delimeter.
+
+    $self->error() # returns an array of errors
+    join '<br/>', $self->error(); # html-break delimeted errors
+    $self->error('some_param'); # show parameter-specific error messages arrayref
+    $self->error($this, "$name must conform ..."); # set error, see `field` function
+
+=head2 errors
+
+The errors function is a synonym for the error function.
+
+=head2 check_mixin
+
+The check_mixin function is used internally to validate the defined keys and
+values of mixins.
+
+=head2 check_field
+
+The check_field function is used internally to validate the defined keys and
+values of fields.
+
+=head2 use_mixin
+
+The use_mixin function sequentially applies defined mixin parameteres
+(as templates)to the specified field.
+
+=head2 use_mixin_field
+
+The use_mixin_field function copies the properties (directives) of a specified
+field to the target field processing copied mixins along the way.
+
+=head2 validate
+
+The validate function sequentially checks the passed-in field names against their
+defined validation rules and returns undef or 1.
+
+=head2 basic_validate
+
+The basic_validate function processes the pre-defined contraints e.g.,
+required, min_length, max_length, etc.
+
 =head1 AUTHOR
 
-  Al Newkirk <awnstudio@cpan.org>
+  Al Newkirk <awncorp@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
