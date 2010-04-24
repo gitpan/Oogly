@@ -1,12 +1,12 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.02';
+  $Oogly::VERSION = '0.03';
 }
+# ABSTRACT: A Data validation idea that just might be ideal!
+
 use strict;
 use warnings;
 use 5.008001;
-
-# ABSTRACT: Oogly - A Data validation idea that just might be ideal!
 
 BEGIN {
     use Exporter();
@@ -118,7 +118,7 @@ sub error {
                 push @{$self->{fields}->{$field->{name}}->{errors}},
                     $self->{fields}->{$field->{name}}->{error};
                 push @{$self->{errors}}, $error_msg unless
-                    int scalar grep $self->{fields}->{$field->{name}}->{error},
+                    scalar grep $self->{fields}->{$field->{name}}->{error},
                         @{$self->{fields}->{errors}};
             }
             else {
@@ -298,7 +298,7 @@ sub basic_validate {
     
         # check min character length
         if ($this->{min_length}) {
-            if (length(int($value)) < $this->{min_length}){
+            if (length($value) < $this->{min_length}){
                 $self->error($this, "$name must contain at least " .
                     $this->{min_length} .
                     (int($this->{min_length}) > 1 ?
@@ -308,7 +308,7 @@ sub basic_validate {
         
         # check max character length
         if ($this->{max_length}) {
-            if (length(int($value)) > $this->{max_length}){
+            if (length($value) > $this->{max_length}){
                 $self->error($this, "$name cannot be greater than " .
                     $this->{max_length} .
                     (int($this->{max_length}) > 1 ?
@@ -347,11 +347,11 @@ __END__
 
 =head1 NAME
 
-Oogly - Oogly - A Data validation idea that just might be ideal!
+Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 SYNOPSIS
 
@@ -523,7 +523,7 @@ field to the target field processing copied mixins along the way.
 =head2 validate
 
 The validate function sequentially checks the passed-in field names against their
-defined validation rules and returns undef or 1.
+defined validation rules and returns 0 or 1.
 
 =head2 basic_validate
 

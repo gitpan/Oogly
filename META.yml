@@ -1,5 +1,5 @@
 ---
-abstract: 'Oogly - A Data validation idea that just might be ideal!'
+abstract: 'A Data validation idea that just might be ideal!'
 author:
   - 'Al Newkirk <awncorp@cpan.org>'
 build_requires: {}
@@ -13,4 +13,4 @@ meta-spec:
 name: Oogly
 recommends: {}
 requires: {}
-version: 0.02
+version: 0.03

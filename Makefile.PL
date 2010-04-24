@@ -19,9 +19,9 @@ my %WriteMakefileArgs = (
                                                },
                        'AUTHOR' => 'Al Newkirk <awncorp@cpan.org>',
                        'BUILD_REQUIRES' => {},
-                       'ABSTRACT' => 'Oogly - A Data validation idea that just might be ideal!',
+                       'ABSTRACT' => 'A Data validation idea that just might be ideal!',
                        'EXE_FILES' => [],
-                       'VERSION' => '0.02',
+                       'VERSION' => '0.03',
                        'PREREQ_PM' => {},
                        'LICENSE' => 'perl'
                      );
