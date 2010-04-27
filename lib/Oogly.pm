@@ -1,6 +1,6 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.05';
+  $Oogly::VERSION = '0.06';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
@@ -386,7 +386,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.05
+version 0.06
 
 =head1 SYNOPSIS
 
@@ -433,6 +433,42 @@ reuse. The following is an example of that...
         mixin_field => 'login',
         label => 'user password'
     };
+
+And now for my second and final act, using Oogly outside of a package.
+
+    #!/usr/bin/perl
+    my $i = Oogly(
+            mixins => {
+                default => {
+                    required    => 1,
+                    min_length  => 4,
+                    max_length  => 255
+                }
+            },
+            fields => {
+                login => {
+                    label => 'user login',
+                    mixin => 'default',
+                    validation => sub {
+                        my ($self, $this, $params) = @_;
+                        my ($name, $value) = ($this->{name}, $this->{value});
+                        $self->error($this, "field $name must contain at least one letter and number")
+                            if ($value !~ /[a-zA-Z]/ && $value !~ /[0-9]/);
+                    }
+                },
+                password => {
+                    mixin_field => 'login',
+                    label => 'user password'
+                }
+            },
+    );
+    
+    # Important store the new instance $i->new
+    $o = $i->new({ login => 'root', password => '...' });
+    
+    if ($o->validate) {
+        ...
+    }
 
 =head1 METHODS
 
@@ -571,25 +607,25 @@ The Oogly method encapsulates fields and mixins and returns an Oogly instance
 for further validation. This method exist for situations where Oogly is use
 outside of a specific validation package.
 
-my $i = Oogly(
-	mixins => {
-		'default' => {
-			required => 1
-		}
-	},
-	fields => {
-		'test1' => {
-			mixin => 'default'
-		}
-	},
-);
-
-# Important store the new instance
-$o = $i->new({ test1 => '...' });
-
-if ($o->validate('test1')) {
-    ...
-}
+    my $i = Oogly(
+            mixins => {
+                    'default' => {
+                            required => 1
+                    }
+            },
+            fields => {
+                    'test1' => {
+                            mixin => 'default'
+                    }
+            },
+    );
+    
+    # Important store the new instance
+    $o = $i->new({ test1 => '...' });
+    
+    if ($o->validate('test1')) {
+        ...
+    }
 
 =head1 AUTHOR
 
