@@ -1,12 +1,15 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.03';
+  $Oogly::VERSION = '0.05';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
 use strict;
 use warnings;
 use 5.008001;
+use Data::Dumper;
+    $Data::Dumper::Terse = 1;
+    $Data::Dumper::Indent = 0;
 
 BEGIN {
     use Exporter();
@@ -24,13 +27,14 @@ BEGIN {
         use_mixin
         use_mixin_field
         basic_validate
+        Oogly
     );
 }
 
 
 our $PACKAGE = (caller)[0];
-    my $flds = "\$$PACKAGE"."::fields = {}"; eval $flds;
-    my $mixs = "\$$PACKAGE"."::mixins = {}"; eval $mixs;
+our $FIELDS  = $PACKAGE::fields = {};
+our $MIXINS  = $PACKAGE::mixins = {};
 
 
 sub new {
@@ -38,8 +42,8 @@ sub new {
     my $params = shift;
     my $self  = {};
     bless $self, $class;
-    my $flds = "\$$class" . "::fields"; $flds = eval $flds;
-    my $mixs = "\$$class" . "::mixins"; $mixs = eval $mixs;
+    my $flds = $FIELDS;
+    my $mixs = $MIXINS;
     my %original_fields = %$flds;
     my %original_mixins = %$mixs;
     $self->{params} = $params;
@@ -78,7 +82,7 @@ sub new {
 sub field {
     my %spec = @_;
     if (%spec) {
-        my $flds = "\$$PACKAGE"."::fields"; $flds = eval $flds;
+        my $flds = $FIELDS;
         while (my ($key, $val) = each (%spec)) {
             $val->{errors} = [];
             $val->{validation} = sub {0}
@@ -92,19 +96,19 @@ sub field {
             }
         }
     }
-    return %spec;
+    return 'field', %spec;
 }
 
 
 sub mixin {
     my %spec = @_;
     if (%spec) {
-        my $mixs = "\$$PACKAGE"."::mixins = {}"; $mixs = eval $mixs;
+        my $mixs = $MIXINS;
         while (my ($key, $val) = each (%spec)) {
             $mixs->{$key} = $val;
         }
     }
-    return %spec;
+    return 'mixin', %spec;
 }
 
 
@@ -319,8 +323,9 @@ sub basic_validate {
         # check reference type
         if ($this->{ref_type}) {
             unless (lc(ref($value)) eq lc($this->{ref_type})) {
-                $self->error($this, "$name is not being stored as a " .
-                    $this->{ref_type} . " reference");
+                $self->error($this, "$name is not being stored as " .
+                    ($this->{ref_type} =~ /^[Aa]/ ? "an " : "a ") . 
+                        $this->{ref_type} . " reference");
             }
         }
         
@@ -340,6 +345,36 @@ sub basic_validate {
     }
 }
 
+
+sub Oogly {
+    my %properties = @_;
+    my $KEY  = undef;
+       $KEY .= (@{['A'..'Z',0..9]}[rand(36)]) for (1..5);
+    $PACKAGE = "Oogly::Instance::" . $KEY;
+    
+    my $code = "package $PACKAGE; use Oogly; our \$PACKAGE = '$PACKAGE'; ";
+    $code .= "our \$FIELDS  = \$PACKAGE::fields = {}; ";
+    $code .= "our \$MIXINS  = \$PACKAGE::mixins = {}; ";
+    
+    while (my($key, $value) = each(%properties)) {
+        die "$key is not a supported property"
+            unless $key eq 'mixins' || $key eq 'fields';
+        if ($key eq 'mixins') {
+            while (my($key, $value) = each(%{$properties{mixins}})) {
+                $code .= "mixin('" . $key . "'," . Dumper($value) . ");";
+            }
+        }
+        if ($key eq 'fields') {
+            while (my($key, $value) = each(%{$properties{fields}})) {
+                $code .= "field('" . $key . "'," . Dumper($value) . ");";
+            }
+        }
+    } $code .= "1;";
+    
+    eval $code or die $@;
+    return $PACKAGE;
+}
+
 1; # End of Oogly
 
 __END__
@@ -351,7 +386,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.03
+version 0.05
 
 =head1 SYNOPSIS
 
@@ -529,6 +564,32 @@ defined validation rules and returns 0 or 1.
 
 The basic_validate function processes the pre-defined contraints e.g.,
 required, min_length, max_length, etc.
+
+=head2 Oogly
+
+The Oogly method encapsulates fields and mixins and returns an Oogly instance
+for further validation. This method exist for situations where Oogly is use
+outside of a specific validation package.
+
+my $i = Oogly(
+	mixins => {
+		'default' => {
+			required => 1
+		}
+	},
+	fields => {
+		'test1' => {
+			mixin => 'default'
+		}
+	},
+);
+
+# Important store the new instance
+$o = $i->new({ test1 => '...' });
+
+if ($o->validate('test1')) {
+    ...
+}
 
 =head1 AUTHOR
 

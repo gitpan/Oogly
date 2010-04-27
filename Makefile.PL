@@ -21,8 +21,10 @@ my %WriteMakefileArgs = (
                        'BUILD_REQUIRES' => {},
                        'ABSTRACT' => 'A Data validation idea that just might be ideal!',
                        'EXE_FILES' => [],
-                       'VERSION' => '0.03',
-                       'PREREQ_PM' => {},
+                       'VERSION' => '0.05',
+                       'PREREQ_PM' => {
+                                        'Data::Dumper' => '2.126'
+                                      },
                        'LICENSE' => 'perl'
                      );
 

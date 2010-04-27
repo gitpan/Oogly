@@ -1,6 +1,6 @@
 #!perl -T
 package Test::Validation;
-use Test::More tests => 9;
+use Test::More tests => 11;
 
 BEGIN {
 	use_ok( 'Oogly' );
@@ -24,6 +24,11 @@ field 'test4' => {
 	required => 1,
 	min_length => 2,
 	max_length => 3
+};
+
+field 'test5' => {
+	label => 'test5',
+	ref_type => 'array'
 };
 
 # no params failure
@@ -60,9 +65,20 @@ $tv->validate('test4');
 ok(($tv->errors())[0] eq "test4 must contain at least 2 characters",
    "minimum length test");
 
+# test ref_type
+$tv = Test::Validation->new({ test5 => 47683463763864 });
+$tv->validate('test5'); 
+ok(($tv->errors())[0] eq "test5 is not being stored as an array reference",
+   "reference type failure test");
+$tv = Test::Validation->new({ test5 => [1234, 5678] });
+$tv->validate('test5');
+ok(!$tv->errors(), "reference type test");
+
 # test no error count
 $tv = Test::Validation->new({ test1 => 1 });
 $tv->validate('test1');
 ok(!scalar($tv->errors()), "error count test");
+
+# warn(($tv->errors())[0]);
 
 1;

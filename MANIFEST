@@ -8,4 +8,5 @@ dist.ini
 lib/Oogly.pm
 t/00-load.t
 t/01-directives.t
+t/02-packageless.t
 t/99-misc.t

@@ -12,5 +12,6 @@ meta-spec:
   version: 1.4
 name: Oogly
 recommends: {}
-requires: {}
-version: 0.03
+requires:
+  Data::Dumper: 2.126
+version: 0.05
