@@ -1,6 +1,6 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.06';
+  $Oogly::VERSION = '0.07';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
@@ -119,15 +119,20 @@ sub error {
         my ($field, $error_msg) = @params;
         if (ref($field) eq "HASH" && (!ref($error_msg) && $error_msg)) {
             if (defined $self->{fields}->{$field->{name}}->{error}) {
-                push @{$self->{fields}->{$field->{name}}->{errors}},
-                    $self->{fields}->{$field->{name}}->{error};
+                
+                # temporary, may break stuff
+                $error_msg = $self->{fields}->{$field->{name}}->{error};
+                
+                push @{$self->{fields}->{$field->{name}}->{errors}}, $error_msg unless
+                    grep { $_ eq $error_msg } @{$self->{fields}->{$field->{name}}->{errors}};
                 push @{$self->{errors}}, $error_msg unless
-                    scalar grep $self->{fields}->{$field->{name}}->{error},
-                        @{$self->{fields}->{errors}};
+                    grep { $_ eq $error_msg } @{$self->{errors}};
             }
             else {
-                push @{$self->{fields}->{$field->{name}}->{errors}}, $error_msg;
-                push @{$self->{errors}}, $error_msg;
+                push @{$self->{fields}->{$field->{name}}->{errors}}, $error_msg
+                    unless grep { $_ eq $error_msg } @{$self->{fields}->{$field->{name}}->{errors}};
+                push @{$self->{errors}}, $error_msg
+                    unless grep { $_ eq $error_msg } @{$self->{errors}};
             }
         }
         else {
@@ -137,11 +142,11 @@ sub error {
     }
     elsif (@params == 1) {
         # return param-specific errors
-        return @{$self->{fields}->{$params[0]}->{errors}};
+        return $self->{fields}->{$params[0]}->{errors};
     }
     else {
         # return all errors
-        return @{$self->{errors}};
+        return $self->{errors};
     }
 }
 
@@ -295,53 +300,71 @@ sub basic_validate {
     
     # check if required
     if ($this->{required} && (! defined $value || $value eq '')) {
-        $self->error($this, "$name is required");
+        my $error = defined $this->{error} ? $this->{error} : "$name is required";
+        $self->error($this, $error);
     }
     
     if ($this->{required} || $value) {
     
         # check min character length
-        if ($this->{min_length}) {
-            if (length($value) < $this->{min_length}){
-                $self->error($this, "$name must contain at least " .
-                    $this->{min_length} .
-                    (int($this->{min_length}) > 1 ?
-                     " characters" : " character"));
+        if (defined $this->{min_length}) {
+            if ($this->{min_length}) {
+                if (length($value) < $this->{min_length}){
+                    my $error = defined $this->{error} ? $this->{error} :
+                    "$name must contain at least " .
+                        $this->{min_length} .
+                        (int($this->{min_length}) > 1 ?
+                         " characters" : " character");
+                    $self->error($this, $error);
+                }
             }
         }
         
         # check max character length
-        if ($this->{max_length}) {
-            if (length($value) > $this->{max_length}){
-                $self->error($this, "$name cannot be greater than " .
-                    $this->{max_length} .
-                    (int($this->{max_length}) > 1 ?
-                     " characters" : " character"));
+        if (defined $this->{max_length}) {
+            if ($this->{max_length}) {
+                if (length($value) > $this->{max_length}){
+                    my $error = defined $this->{error} ? $this->{error} :
+                    "$name cannot be greater than " .
+                        $this->{max_length} .
+                        (int($this->{max_length}) > 1 ?
+                         " characters" : " character");
+                    $self->error($this, $error);
+                }
             }
         }
         
         # check reference type
-        if ($this->{ref_type}) {
-            unless (lc(ref($value)) eq lc($this->{ref_type})) {
-                $self->error($this, "$name is not being stored as " .
-                    ($this->{ref_type} =~ /^[Aa]/ ? "an " : "a ") . 
-                        $this->{ref_type} . " reference");
+        if (defined $this->{ref_type}) {
+            if ($this->{ref_type}) {
+                unless (lc(ref($value)) eq lc($this->{ref_type})) {
+                    my $error = defined $this->{error} ? $this->{error} :
+                    "$name is not being stored as " .
+                        ($this->{ref_type} =~ /^[Aa]/ ? "an " : "a ") . 
+                            $this->{ref_type} . " reference";
+                    $self->error($this, $error);
+                }
             }
         }
         
         # check data type
-        if ($this->{data_type}) {
-            
+        if (defined $this->{data_type}) {
+            if ($this->{data_type}) {
+                
+            }
         }
         
         # check against regex
-        if ($this->{regex}) {
-            unless ($value =~ $this->{regex}) {
-                $self->error($this, "$name failed regular expression testing " .
-                    "using `$value`");
+        if (defined $this->{regex}) {
+            if ($this->{regex}) {
+                unless ($value =~ $this->{regex}) {
+                    my $error = defined $this->{error} ? $this->{error} :
+                    "$name failed regular expression testing " .
+                        "using `$value`";
+                    $self->error($this, $error);
+                }
             }
         }
-    
     }
 }
 
@@ -386,7 +409,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.06
+version 0.07
 
 =head1 SYNOPSIS
 

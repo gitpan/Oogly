@@ -20,6 +20,6 @@ my $val = Oogly(
 );
 
 $val = $val->new({ test1 => 1 }); $val->validate();
-ok(!scalar($val->errors), 'packageless validation test');
+ok(!@{$val->errors}, 'packageless validation test');
 
 1;

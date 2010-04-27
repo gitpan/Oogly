@@ -32,6 +32,6 @@ field 'other_data' => {
 
 my $tv = Test::Validation->new({ some_val => 'test' });
 $tv->validate('some_val', 'other_data');
-ok(($tv->errors) == 3, "miscellaneous tests");
+ok(@{$tv->errors} == 3, "miscellaneous tests");
 
 1;
