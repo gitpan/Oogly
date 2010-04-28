@@ -1,6 +1,6 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.07';
+  $Oogly::VERSION = '0.08';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
@@ -283,10 +283,7 @@ sub validate {
                 $self->{fields}->{$field}->{validation}->(@passed);
             }
         }
-        return $self->{errors} ? 0 : 1;
-    }
-    else {
-        return 0;
+        return @{$self->{errors}} > 0 ? 0 : 1;
     }
 }
 
@@ -409,7 +406,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.07
+version 0.08
 
 =head1 SYNOPSIS
 
