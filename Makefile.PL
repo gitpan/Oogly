@@ -9,24 +9,24 @@ use ExtUtils::MakeMaker 6.31;
 
 
 my %WriteMakefileArgs = (
-                       'test' => {
-                                   'TESTS' => 't/*.t'
-                                 },
-                       'NAME' => 'Oogly',
-                       'DISTNAME' => 'Oogly',
-                       'CONFIGURE_REQUIRES' => {
-                                                 'ExtUtils::MakeMaker' => '6.31'
-                                               },
-                       'AUTHOR' => 'Al Newkirk <awncorp@cpan.org>',
-                       'BUILD_REQUIRES' => {},
-                       'ABSTRACT' => 'A Data validation idea that just might be ideal!',
-                       'EXE_FILES' => [],
-                       'VERSION' => '0.08',
-                       'PREREQ_PM' => {
-                                        'Data::Dumper' => '2.126'
-                                      },
-                       'LICENSE' => 'perl'
-                     );
+  'ABSTRACT' => 'A Data validation idea that just might be ideal!',
+  'AUTHOR' => 'Al Newkirk <awncorp@cpan.org>',
+  'BUILD_REQUIRES' => {},
+  'CONFIGURE_REQUIRES' => {
+    'ExtUtils::MakeMaker' => '6.31'
+  },
+  'DISTNAME' => 'Oogly',
+  'EXE_FILES' => [],
+  'LICENSE' => 'perl',
+  'NAME' => 'Oogly',
+  'PREREQ_PM' => {
+    'Data::Dumper' => '2.126'
+  },
+  'VERSION' => '0.09',
+  'test' => {
+    'TESTS' => 't/*.t'
+  }
+);
 
 
 unless ( eval { ExtUtils::MakeMaker->VERSION(6.56) } ) {

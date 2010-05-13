@@ -3,7 +3,7 @@ package Test::Validation;
 use Test::More tests => 2;
 
 BEGIN {
-	use_ok( 'Oogly' );
+	use_ok( 'Oogly', ':all' );
 }
 
 mixin 'test' => {

@@ -1,6 +1,6 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.08';
+  $Oogly::VERSION = '0.09';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
@@ -13,9 +13,9 @@ use Data::Dumper;
 
 BEGIN {
     use Exporter();
-    use vars qw( @ISA @EXPORT @EXPORT_OK );
+    use vars qw( @ISA %EXPORT_TAGS @EXPORT_OK );
     @ISA    = qw( Exporter );
-    @EXPORT = qw(
+    @EXPORT_OK = qw(
         new
         field
         mixin
@@ -27,8 +27,10 @@ BEGIN {
         use_mixin
         use_mixin_field
         basic_validate
+        basic_filter
         Oogly
     );
+    %EXPORT_TAGS = ( all => [ @EXPORT_OK ] );
 }
 
 
@@ -73,6 +75,24 @@ sub new {
             $self->use_mixin_field($self->{fields}->{$_}->{mixin_field}, $_)
                 if $self->{fields}->{$_}->{mixin_field}
                 && $self->{fields}->{$self->{fields}->{$_}->{mixin_field}};
+        }
+    }
+    # check for and process input filters
+    foreach (keys %{$self->{fields}}) {
+        unless ($_ eq 'errors') {
+            my $filters = [];
+            if (defined $self->{fields}->{$_}->{filters}) {
+                $filters = $self->{fields}->{$_}->{filters};
+            }
+            if (defined $self->{fields}->{$_}->{filter}) {
+                $filters = $self->{fields}->{$_}->{filter};
+            }
+            $filters = [$filters] unless ref($filters) eq "ARRAY";
+            foreach my $filter (@{$filters}) {
+                if (defined $self->{params}->{$_}) {
+                    $self->basic_filter($filter, $_);
+                }
+            }
         }
     }
     return $self;
@@ -148,23 +168,29 @@ sub error {
         # return all errors
         return $self->{errors};
     }
+    return 0;
 }
 
 
 sub errors {
-    shift->error(@_);
+    my ($self, @args) = @_;
+    return $self->error(@args);
 }
 
 
 sub check_mixin {
     my ($self, $mixin, $spec) = @_;
+    
     my $directives = {
-        required   => sub {1},
-        min_length => sub {1},
-        max_length => sub {1},
-        data_type => sub {1},
-        ref_type => sub {1},
-        regex => sub {1},
+        required    => sub {1},
+        min_length  => sub {1},
+        max_length  => sub {1},
+        data_type   => sub {1},
+        ref_type    => sub {1},
+        regex       => sub {1},
+        
+        filter      => sub {1},
+        filters     => sub {1},
         
     };
     
@@ -176,28 +202,34 @@ sub check_mixin {
             die "The `$_` directive supplied by the `$mixin` mixin is invalid";
         }
     }
+    
+    return 1;
 }
 
 
 sub check_field {
     my ($self, $field, $spec) = @_;
+    
     my $directives = {
-        mixin => sub {1},
+        mixin       => sub {1},
         mixin_field => sub {1},
-        validation => sub {1},
-        errors => sub {1},
-        label => sub {1},
-        error => sub {1},
-        value => sub {1},
-        name => sub {1},
+        validation  => sub {1},
+        errors      => sub {1},
+        label       => sub {1},
+        error       => sub {1},
+        value       => sub {1},
+        name        => sub {1},
+        filter      => sub {1},
+        filters     => sub {1},
         
-        required   => sub {1},
-        min_length => sub {1},
-        max_length => sub {1},
-        data_type => sub {1},
-        ref_type => sub {1},
-        regex => sub {1},
+        required    => sub {1},
+        min_length  => sub {1},
+        max_length  => sub {1},
+        data_type   => sub {1},
+        ref_type    => sub {1},
+        regex       => sub {1},
     };
+    
     foreach (keys %{$spec}) {
         if (!defined $directives->{$_}) {
             die "The `$_` directive supplied by the `$field` field is not supported";
@@ -206,6 +238,8 @@ sub check_field {
             die "The `$_` directive supplied by the `$field` field is invalid";
         }
     }
+    
+    return 1;
 }
 
 
@@ -225,6 +259,7 @@ sub use_mixin {
                 unless defined $self->{fields}->{$field}->{$key};
         }
     }
+    return 1;
 }
 
 
@@ -238,6 +273,7 @@ sub use_mixin_field {
             $self->use_mixin($target, $key);
         }
     }
+    return 1;
 }
 
 
@@ -285,6 +321,7 @@ sub validate {
         }
         return @{$self->{errors}} > 0 ? 0 : 1;
     }
+    return 0;
 }
 
 
@@ -363,6 +400,85 @@ sub basic_validate {
             }
         }
     }
+    return 1;
+}
+
+
+sub basic_filter {
+    my ($self, $filter, $field) = @_;
+    
+    # convert to lowercase
+    if ($filter eq "lowercase") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =
+                lc $self->{params}->{$field};
+        }
+    }
+    # convert to uppercase
+    if ($filter eq "uppercase") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =
+                uc $self->{params}->{$field};
+        }
+    }
+    # convert to titlecase
+    if ($filter eq "titlecase") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =
+                join " ", map (ucfirst, split (/\s/, $self->{params}->{$field}));
+        }
+    }
+    # convert to alphanumeric
+    if ($filter eq "alphanumeric") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =~
+                s/[^A-Za-z0-9]//g;
+        }
+    }
+    # convert to numeric
+    if ($filter eq "numeric") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =~
+                s/[^0-9]//g;
+        }
+    }
+    # convert to alpha
+    if ($filter eq "alpha") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =~
+                s/[^A-Za-z]//g;
+        }
+    }
+    # convert to digit
+    if ($filter eq "digit") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =~
+                s/\D//g;
+        }
+    }
+    # convert to strip
+    if ($filter eq "strip") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =~
+                s/\s+/ /g;
+        }
+    }
+    # convert to trim
+    if ($filter eq "trim") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =~
+                s/^\s+//o;
+            $self->{params}->{$field} =~
+                s/\s+$//o;
+        }
+    }
+    # use regex
+    if ($filter =~ "^CODE") {
+        if (defined $self->{params}->{$field}) {
+            $filter->($self->{params}->{$field});
+        }
+    }
+    
 }
 
 
@@ -372,7 +488,7 @@ sub Oogly {
        $KEY .= (@{['A'..'Z',0..9]}[rand(36)]) for (1..5);
     $PACKAGE = "Oogly::Instance::" . $KEY;
     
-    my $code = "package $PACKAGE; use Oogly; our \$PACKAGE = '$PACKAGE'; ";
+    my $code = "package $PACKAGE; use Oogly ':all'; our \$PACKAGE = '$PACKAGE'; ";
     $code .= "our \$FIELDS  = \$PACKAGE::fields = {}; ";
     $code .= "our \$MIXINS  = \$PACKAGE::mixins = {}; ";
     
@@ -406,7 +522,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.08
+version 0.09
 
 =head1 SYNOPSIS
 
@@ -423,7 +539,7 @@ reuse. The following is an example of that...
     }
 
     package MyApp::Validation
-    use Oogly;
+    use Oogly qw/:all/;
 
     # define a mixin, a sortof template that can be included with other rules
     # by using the mixin directive
@@ -457,6 +573,8 @@ reuse. The following is an example of that...
 And now for my second and final act, using Oogly outside of a package.
 
     #!/usr/bin/perl
+    use Oogly qw/:all/;
+    
     my $i = Oogly(
             mixins => {
                 default => {
@@ -563,6 +681,30 @@ the hash reference where the key is `some_data`.
         ref_type => 'array',
         regex => '^\d+$'
     };
+    
+    filter: An alias for the filters directive, see filter method for filter names
+    filters: Set filters to manipulate the data before validation
+    
+    field 'd_field' => {
+        ...,
+        filters => [
+            'trim',
+            'strip'
+        ]
+    };
+    
+    field 'e_field' => {
+        filter => 'strip'
+    };
+    
+    field 'f_field' => {
+        filters => [
+            'trim',
+            sub {
+                $_[0] =~ s/(abc)|(123)//;
+            }
+        ]
+    };
 
 =head2 mixin
 
@@ -620,6 +762,12 @@ defined validation rules and returns 0 or 1.
 
 The basic_validate function processes the pre-defined contraints e.g.,
 required, min_length, max_length, etc.
+
+=head2 basic_filter
+
+The basic_filter function processes the pre-defined filters e.g.,
+trim, strip, digit, alpha, numeric, alphanumeric, uppercase, lowercase,
+titlecase, or custom etc.
 
 =head2 Oogly
 

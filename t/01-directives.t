@@ -3,7 +3,7 @@ package Test::Validation;
 use Test::More tests => 11;
 
 BEGIN {
-	use_ok( 'Oogly' );
+	use_ok( 'Oogly', ':all' );
 }
 
 field 'test1' => {
