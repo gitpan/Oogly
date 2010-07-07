@@ -14,4 +14,4 @@ name: Oogly
 recommends: {}
 requires:
   Data::Dumper: 2.126
-version: 0.09
+version: 0.10

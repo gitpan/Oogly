@@ -1,6 +1,6 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.09';
+  $Oogly::VERSION = '0.10';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
@@ -336,6 +336,7 @@ sub basic_validate {
     if ($this->{required} && (! defined $value || $value eq '')) {
         my $error = defined $this->{error} ? $this->{error} : "$name is required";
         $self->error($this, $error);
+	return 1;
     }
     
     if ($this->{required} || $value) {
@@ -522,7 +523,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.09
+version 0.10
 
 =head1 SYNOPSIS
 
