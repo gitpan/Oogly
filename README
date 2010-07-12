@@ -3,7 +3,7 @@ Oogly - A Data validation idea that just might be ideal!
 Oogly is a different approach to data validation, it attempts to simplify and
 centralize data validation rules to ensure DRY (don't repeat yourself) code.
 PLEASE NOTE! It is not the intent of this module to provide validation routines
-but instead to provide simplistic validation flow-control, and promote code
+but instead to provide a simplistic validation flow-control and promote code
 reuse. I suppose it could be considered a data validation framework.
 
 The following is an example of that...
@@ -33,9 +33,9 @@ The following is an example of that...
         mixin => 'default',
         validation => sub {
             my ($self, $this, $params) = @_;
-            my ($name, $value) = ($this->{name}, $this->{value});
-            $self->error($this, "field $name must contain at least one letter and number")
-                if ($value !~ /[a-zA-Z]/ && $value !~ /[0-9]/);
+            my ($name, $value) = ($this->{label}, $this->{value});
+            $self->error($this, "$name must contain at least one letter and number")
+                unless ($value =~ /[a-zA-Z]/ || $value =~ /[0-9]/);
         }
     };
 
@@ -66,6 +66,11 @@ run the following commands (Dist::Zilla required):
 REPOSITORY
 
     http://github.com/awnstudio/Oogly/
+    
+WHATS NEXT
+
+    + use a hash merging module to replace existing merging techniques
+    
 
 COPYRIGHT AND LICENCE
 

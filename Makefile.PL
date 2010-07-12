@@ -22,7 +22,7 @@ my %WriteMakefileArgs = (
   'PREREQ_PM' => {
     'Data::Dumper' => '2.126'
   },
-  'VERSION' => '0.10',
+  'VERSION' => '0.11',
   'test' => {
     'TESTS' => 't/*.t'
   }

@@ -33,7 +33,7 @@ field 'test5' => {
 
 # no params failure
 eval { Test::Validation->new() };
-ok($@, "no parameters failure");
+ok(!$@, "no parameters non-failure");
 
 # test required directive
 my $tv = Test::Validation->new({ 'test1' => undef });

@@ -1,6 +1,6 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.10';
+  $Oogly::VERSION = '0.11';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
@@ -53,8 +53,9 @@ sub new {
     $self->{mixins} = $mixs;
     $self->{errors} = [];
     
-    die "No valid parameters were found, parameters are required for validation"
-        unless $self->{params} && ref($self->{params}) eq "HASH";
+    # depreciated: 
+    # die "No valid parameters were found, parameters are required for validation"
+    #     unless $self->{params} && ref($self->{params}) eq "HASH";
     
     # validate mixin directives
     foreach (keys %{$self->{mixins}}) {
@@ -157,7 +158,7 @@ sub error {
         }
         else {
             die "Can't set error without proper field and error message data, " .
-            "field must be a hashref with atleast name and value keys";
+            "field must be a hashref with name and value keys";
         }
     }
     elsif (@params == 1) {
@@ -319,9 +320,26 @@ sub validate {
                 $self->{fields}->{$field}->{validation}->(@passed);
             }
         }
-        return @{$self->{errors}} > 0 ? 0 : 1;
     }
-    return 0;
+    else {
+        # if no parameters are found, instead of dying, warn and continue
+        unless ($self->{params} && ref($self->{params}) eq "HASH") {
+            # warn
+            #     "No valid parameters were found, " .
+            #     "parameters are required for validation";
+            foreach my $field (keys %{$self->{fields}}) {
+                my $this = $self->{fields}->{$field};
+                $this->{name}  = $field;
+                $this->{value} = $self->{params}->{$field};
+                # execute simple validation
+                $self->basic_validate($field, $this);
+                # custom validation shouldn't fire without params and data
+                # my @passed = ($self, $this, {});
+                # $self->{fields}->{$field}->{validation}->(@passed);
+            }
+        }
+    }
+    return @{$self->{errors}} ? 0 : 1; # returns true if no errors
 }
 
 
@@ -336,7 +354,7 @@ sub basic_validate {
     if ($this->{required} && (! defined $value || $value eq '')) {
         my $error = defined $this->{error} ? $this->{error} : "$name is required";
         $self->error($this, $error);
-	return 1;
+        return 1; # if required and fails, stop processing immediately
     }
     
     if ($this->{required} || $value) {
@@ -523,20 +541,23 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.10
+version 0.11
 
 =head1 SYNOPSIS
 
 Oogly is a different approach to data validation, it attempts to simplify and
 centralize data validation rules to ensure DRY (don't repeat yourself) code.
 PLEASE NOTE! It is not the intent of this module to provide validation routines 
-but instead to provide simplistic validation flow-control, and promote code
+but instead to provide a simplistic validation flow-control and promote code
 reuse. The following is an example of that...
 
     use MyApp::Validation;
     my $app = MyApp::Validation->new(\%params);
     if ($app->validate('login', 'password')){
         ...
+    }
+    else {
+        print join "\n", @{$app->errors};
     }
 
     package MyApp::Validation
@@ -558,9 +579,9 @@ reuse. The following is an example of that...
         mixin => 'default',
         validation => sub {
             my ($self, $this, $params) = @_;
-            my ($name, $value) = ($this->{name}, $this->{value});
-            $self->error($this, "field $name must contain at least one letter and number")
-                if ($value !~ /[a-zA-Z]/ && $value !~ /[0-9]/);
+            my ($name, $value) = ($this->{label}, $this->{value});
+            $self->error($this, "$name must contain at least one letter and number")
+                unless ($value =~ /[a-zA-Z]/ || $value =~ /[0-9]/);
         }
     };
     
@@ -602,7 +623,7 @@ And now for my second and final act, using Oogly outside of a package.
             },
     );
     
-    # Important store the new instance $i->new
+    # Important, store the new instance created by the $i->new function
     $o = $i->new({ login => 'root', password => '...' });
     
     if ($o->validate) {
@@ -725,8 +746,8 @@ during validation. The error function with no parameters returns the error
 message arrayref which can be used to output a single concatenated error message
 a with delimeter.
 
-    $self->error() # returns an array of errors
-    join '<br/>', $self->error(); # html-break delimeted errors
+    $self->error() # returns an arrayref of errors
+    join '<br/>', @{$self->error()}; # html-break delimeted errors
     $self->error('some_param'); # show parameter-specific error messages arrayref
     $self->error($this, "$name must conform ..."); # set error, see `field` function
 
@@ -757,7 +778,7 @@ field to the target field processing copied mixins along the way.
 =head2 validate
 
 The validate function sequentially checks the passed-in field names against their
-defined validation rules and returns 0 or 1.
+defined validation rules and returns 0 or 1 based on the existence of errors.
 
 =head2 basic_validate
 
