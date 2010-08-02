@@ -4,6 +4,7 @@ META.yml
 Makefile.PL
 Oogly.kpf
 README
+TODO
 dist.ini
 lib/Oogly.pm
 t/00-load.t

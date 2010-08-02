@@ -1,0 +1,8 @@
+package Oogly
+summary A Data validation idea that just might be ideal!
+version 0.21
+        * replace manual field and mixin syncing with Hash::Merge hash merging function
+        * fix field and mixin package variables which create persistent values (bad for webapps)
+version 0.22
+        - centralize directives
+        - mixin_field function overwrites label directive which can be uncool

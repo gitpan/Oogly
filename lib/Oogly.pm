@@ -1,12 +1,13 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.11';
+  $Oogly::VERSION = '0.21';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
 use strict;
 use warnings;
 use 5.008001;
+use Hash::Merge qw/merge/;
 use Data::Dumper;
     $Data::Dumper::Terse = 1;
     $Data::Dumper::Indent = 0;
@@ -17,6 +18,7 @@ BEGIN {
     @ISA    = qw( Exporter );
     @EXPORT_OK = qw(
         new
+        setup
         field
         mixin
         error
@@ -40,18 +42,27 @@ our $MIXINS  = $PACKAGE::mixins = {};
 
 
 sub new {
+    shift  @_;
+    return Oogly(
+        mixins => $MIXINS,
+        fields => $FIELDS,
+    )->setup(@_);
+}
+
+
+sub setup {
     my $class = shift;
     my $params = shift;
     my $self  = {};
     bless $self, $class;
     my $flds = $FIELDS;
     my $mixs = $MIXINS;
-    my %original_fields = %$flds;
-    my %original_mixins = %$mixs;
     $self->{params} = $params;
     $self->{fields} = $flds;
     $self->{mixins} = $mixs;
     $self->{errors} = [];
+    
+    # debugging - print Dumper($FIELDS); exit;
     
     # depreciated: 
     # die "No valid parameters were found, parameters are required for validation"
@@ -63,9 +74,11 @@ sub new {
     }
     # validate field directives
     foreach (keys %{$self->{fields}}) {
+        $self->check_field($_, $self->{fields}->{$_}) unless $_ eq 'errors';
+    }
+    # check for and process a mixin directive
+    foreach (keys %{$self->{fields}}) {
         unless ($_ eq 'errors') {
-            $self->check_field($_, $self->{fields}->{$_});
-            # check for and process mixin directives
             $self->use_mixin($_, $self->{fields}->{$_}->{mixin})
                 if $self->{fields}->{$_}->{mixin};
         }
@@ -100,23 +113,19 @@ sub new {
 }
 
 
+
+
 sub field {
     my %spec = @_;
     if (%spec) {
-        my $flds = $FIELDS;
-        while (my ($key, $val) = each (%spec)) {
-            $val->{errors} = [];
-            $val->{validation} = sub {0}
-                unless $val->{validation};
-            # overwrite bad, append good
-            #$flds->{$key} = $val;
-            if (ref($val) eq "HASH") {
-                while (my ($k, $v) = each (%{$val})) {
-                    $flds->{$key}->{$k} = $v;
-                }
-            }
-        }
+        my $name = (keys(%spec))[0];
+        my $data = (values(%spec))[0];
+        $FIELDS->{$name} = merge($data, $FIELDS->{$name});
+        
+        $FIELDS->{$name}->{errors} = [];
+        $FIELDS->{$name}->{validation} = sub {0} unless $data->{validation};
     }
+    
     return 'field', %spec;
 }
 
@@ -124,10 +133,9 @@ sub field {
 sub mixin {
     my %spec = @_;
     if (%spec) {
-        my $mixs = $MIXINS;
-        while (my ($key, $val) = each (%spec)) {
-            $mixs->{$key} = $val;
-        }
+        my $name = (keys(%spec))[0];
+        my $data = (values(%spec))[0];
+        $MIXINS->{$name} = merge($data, $MIXINS->{$name});
     }
     return 'mixin', %spec;
 }
@@ -248,17 +256,13 @@ sub use_mixin {
     my ($self, $field, $mixin_s ) = @_;
     if (ref($mixin_s) eq "ARRAY") {
         foreach my $mixin (@{$mixin_s}) {
-            while (my($key, $val) = each (%{$self->{mixins}->{$mixin}})) {
-                $self->{fields}->{$field}->{$key} = $val
-                    unless defined $self->{fields}->{$field}->{$key};
-            }
+            $self->{fields}->{$field} =
+                merge($self->{fields}->{$field}, $self->{mixins}->{$mixin});
         }
     }
     else {
-        while (my($key, $val) = each (%{$self->{mixins}->{$mixin_s}})) {
-            $self->{fields}->{$field}->{$key} = $val
-                unless defined $self->{fields}->{$field}->{$key};
-        }
+        $self->{fields}->{$field} =
+            merge($self->{fields}->{$field}, $self->{mixins}->{$mixin_s});
     }
     return 1;
 }
@@ -267,9 +271,9 @@ sub use_mixin {
 sub use_mixin_field {
     my ($self, $field, $target) = @_;
     $self->check_field($field, $self->{fields}->{$field});
+    $self->{fields}->{$target} =
+        merge($self->{fields}->{$field}, $self->{fields}->{$target});
     while (my($key, $val) = each (%{$self->{fields}->{$field}})) {
-        $self->{fields}->{$target}->{$key} = $val
-            unless defined $self->{fields}->{$target}->{$key};
         if ($key eq 'mixin') {
             $self->use_mixin($target, $key);
         }
@@ -541,7 +545,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.11
+version 0.21
 
 =head1 SYNOPSIS
 
@@ -561,7 +565,7 @@ reuse. The following is an example of that...
     }
 
     package MyApp::Validation
-    use Oogly qw/:all/;
+    use Oogly qw/mixin field/;
 
     # define a mixin, a sortof template that can be included with other rules
     # by using the mixin directive
@@ -623,8 +627,8 @@ And now for my second and final act, using Oogly outside of a package.
             },
     );
     
-    # Important, store the new instance created by the $i->new function
-    $o = $i->new({ login => 'root', password => '...' });
+    # Important, store the new instance created by the $i->setup function
+    $o = $i->setup({ login => 'root', password => '...' });
     
     if ($o->validate) {
         ...
@@ -635,6 +639,10 @@ And now for my second and final act, using Oogly outside of a package.
 =head2 new
 
 The new method instantiates a new Oogly or Oogly package instance.
+
+=head2 setup
+
+The setup method is magical.
 
 =head2 field
 
@@ -811,7 +819,7 @@ outside of a specific validation package.
     );
     
     # Important store the new instance
-    $o = $i->new({ test1 => '...' });
+    $o = $i->setup({ test1 => '...' });
     
     if ($o->validate('test1')) {
         ...

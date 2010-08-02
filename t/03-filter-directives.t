@@ -48,9 +48,9 @@ my $test0 = Test::Validation->new({ test0 => ' this is a test    ' });
 ok($test0->{params}->{test0} eq "This Is A Test", "trim test");
 
 my $test1 = Test::Validation->new({ test1 => ' this is a test  1234567890  ' });
-ok($test1->{params}->{test1} eq "this is a test 1234567890", "strip & trim test");
+ok($test1->{params}->{test1} eq "This Is A Test 1234567890", "strip & trim test");
 
 my $test2 = Test::Validation->new({ test2 => ' this is a test  1234567890  ' });
-ok($test2->{params}->{test2} eq "this is a test 4567890", "custom regex test");
+ok($test2->{params}->{test2} eq "This Is A Test 4567890", "custom regex test");
 
 1;

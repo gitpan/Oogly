@@ -20,9 +20,10 @@ my %WriteMakefileArgs = (
   'LICENSE' => 'perl',
   'NAME' => 'Oogly',
   'PREREQ_PM' => {
-    'Data::Dumper' => '2.126'
+    'Data::Dumper' => '2.126',
+    'Hash::Merge' => '0.12'
   },
-  'VERSION' => '0.11',
+  'VERSION' => '0.21',
   'test' => {
     'TESTS' => 't/*.t'
   }
