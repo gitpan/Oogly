@@ -20,10 +20,11 @@ my %WriteMakefileArgs = (
   'LICENSE' => 'perl',
   'NAME' => 'Oogly',
   'PREREQ_PM' => {
-    'Data::Dumper' => '2.126',
+    'Array::Unique' => '0',
+    'Data::Dumper::Concise' => '0',
     'Hash::Merge' => '0.12'
   },
-  'VERSION' => '0.21',
+  'VERSION' => '0.31',
   'test' => {
     'TESTS' => 't/*.t'
   }
@@ -32,10 +33,10 @@ my %WriteMakefileArgs = (
 
 unless ( eval { ExtUtils::MakeMaker->VERSION(6.56) } ) {
   my $br = delete $WriteMakefileArgs{BUILD_REQUIRES};
-  my $pp = $WriteMakefileArgs{PREREQ_PM}; 
+  my $pp = $WriteMakefileArgs{PREREQ_PM};
   for my $mod ( keys %$br ) {
     if ( exists $pp->{$mod} ) {
-      $pp->{$mod} = $br->{$mod} if $br->{$mod} > $pp->{$mod}; 
+      $pp->{$mod} = $br->{$mod} if $br->{$mod} > $pp->{$mod};
     }
     else {
       $pp->{$mod} = $br->{$mod};

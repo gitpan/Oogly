@@ -1,16 +1,15 @@
 package Oogly;
 BEGIN {
-  $Oogly::VERSION = '0.21';
+  $Oogly::VERSION = '0.31';
 }
 # ABSTRACT: A Data validation idea that just might be ideal!
 
 use strict;
 use warnings;
 use 5.008001;
+use Array::Unique;
 use Hash::Merge qw/merge/;
-use Data::Dumper;
-    $Data::Dumper::Terse = 1;
-    $Data::Dumper::Indent = 0;
+use Data::Dumper::Concise;
 
 BEGIN {
     use Exporter();
@@ -72,13 +71,19 @@ sub setup {
     foreach (keys %{$self->{mixins}}) {
         $self->check_mixin($_, $self->{mixins}->{$_});
     }
-    # validate field directives
+    # validate field directives and create filters arrayref if needed
     foreach (keys %{$self->{fields}}) {
         $self->check_field($_, $self->{fields}->{$_}) unless $_ eq 'errors';
+        unless ($_ eq 'errors') {
+            if (! defined $self->{fields}->{$_}->{filters}) {
+                $self->{fields}->{$_}->{filters} = [];
+            }
+        }
     }
     # check for and process a mixin directive
     foreach (keys %{$self->{fields}}) {
         unless ($_ eq 'errors') {
+            
             $self->use_mixin($_, $self->{fields}->{$_}->{mixin})
                 if $self->{fields}->{$_}->{mixin};
         }
@@ -86,25 +91,36 @@ sub setup {
     # check for and process a mixin_field directive
     foreach (keys %{$self->{fields}}) {
         unless ($_ eq 'errors') {
+            
             $self->use_mixin_field($self->{fields}->{$_}->{mixin_field}, $_)
                 if $self->{fields}->{$_}->{mixin_field}
                 && $self->{fields}->{$self->{fields}->{$_}->{mixin_field}};
         }
     }
-    # check for and process input filters
+    # check for and process input filters and default values
     foreach (keys %{$self->{fields}}) {
         unless ($_ eq 'errors') {
-            my $filters = [];
-            if (defined $self->{fields}->{$_}->{filters}) {
-                $filters = $self->{fields}->{$_}->{filters};
-            }
+            
+            tie my @filters, 'Array::Unique';
+            @filters = @{$self->{fields}->{$_}->{filters}};
+            
             if (defined $self->{fields}->{$_}->{filter}) {
-                $filters = $self->{fields}->{$_}->{filter};
+                push @filters, $self->{fields}->{$_}->{filter};
+                    delete $self->{fields}->{$_}->{filter};
             }
-            $filters = [$filters] unless ref($filters) eq "ARRAY";
-            foreach my $filter (@{$filters}) {
+            
+            $self->{fields}->{$_}->{filters} = [@filters];
+            
+            foreach my $filter (@{$self->{fields}->{$_}->{filters}}) {
                 if (defined $self->{params}->{$_}) {
                     $self->basic_filter($filter, $_);
+                }
+            }
+            
+            # default values
+            if (defined $self->{params}->{$_} && length($self->{params}->{$_}) == 0) {
+                if ($self->{fields}->{$_}->{value}) {
+                    $self->{params}->{$_} = $self->{fields}->{$_}->{value};
                 }
             }
         }
@@ -120,10 +136,13 @@ sub field {
     if (%spec) {
         my $name = (keys(%spec))[0];
         my $data = (values(%spec))[0];
-        $FIELDS->{$name} = merge($data, $FIELDS->{$name});
+        
+        #$FIELDS->{$name} = merge($data, $FIELDS->{$name});
+        $FIELDS->{$name} = $data;
         
         $FIELDS->{$name}->{errors} = [];
-        $FIELDS->{$name}->{validation} = sub {0} unless $data->{validation};
+        $FIELDS->{$name}->{validation} =
+            defined $data->{validation} ? $data->{validation} : sub {0};
     }
     
     return 'field', %spec;
@@ -135,7 +154,9 @@ sub mixin {
     if (%spec) {
         my $name = (keys(%spec))[0];
         my $data = (values(%spec))[0];
-        $MIXINS->{$name} = merge($data, $MIXINS->{$name});
+        
+        #$MIXINS->{$name} = merge($data, $MIXINS->{$name});
+        $MIXINS->{$name} = $data;
     }
     return 'mixin', %spec;
 }
@@ -256,13 +277,17 @@ sub use_mixin {
     my ($self, $field, $mixin_s ) = @_;
     if (ref($mixin_s) eq "ARRAY") {
         foreach my $mixin (@{$mixin_s}) {
-            $self->{fields}->{$field} =
-                merge($self->{fields}->{$field}, $self->{mixins}->{$mixin});
+            if (defined $self->{mixins}->{$mixin}) {
+                $self->{fields}->{$field} =
+                    merge($self->{fields}->{$field}, $self->{mixins}->{$mixin});
+            }
         }
     }
     else {
-        $self->{fields}->{$field} =
-            merge($self->{fields}->{$field}, $self->{mixins}->{$mixin_s});
+        if (defined $self->{mixins}->{$mixin_s}) {
+            $self->{fields}->{$field} =
+                merge($self->{fields}->{$field}, $self->{mixins}->{$mixin_s});
+        }
     }
     return 1;
 }
@@ -271,8 +296,19 @@ sub use_mixin {
 sub use_mixin_field {
     my ($self, $field, $target) = @_;
     $self->check_field($field, $self->{fields}->{$field});
+    
+    # name and label overwrite restricted
+    my $name  = $self->{fields}->{$target}->{name}
+        if defined $self->{fields}->{$target}->{name};
+    my $label = $self->{fields}->{$target}->{label}
+        if defined $self->{fields}->{$target}->{label};
+    
     $self->{fields}->{$target} =
         merge($self->{fields}->{$field}, $self->{fields}->{$target});
+        
+    $self->{fields}->{$target}->{name}  = $name  if defined $name;
+    $self->{fields}->{$target}->{label} = $label if defined $label;
+    
     while (my($key, $val) = each (%{$self->{fields}->{$field}})) {
         if ($key eq 'mixin') {
             $self->use_mixin($target, $key);
@@ -326,11 +362,44 @@ sub validate {
         }
     }
     else {
+        if (@fields) {
+            foreach my $field (@fields) {
+                if (!defined $self->{fields}->{$field}) {
+                    die "Data validation field `$field` does not exist";
+                }
+                my $this = $self->{fields}->{$field};
+                $this->{name} = $field;
+                $this->{value} = $self->{params}->{$field};
+                my @passed = (
+                    $self,
+                    $this,
+                    $self->{params}
+                );
+                # execute simple validation
+                $self->basic_validate($field, $this);
+                # custom validation
+                $self->{fields}->{$field}->{validation}->(@passed)
+                    if $self->{fields}->{$field}->{value};
+            }
+        }
         # if no parameters are found, instead of dying, warn and continue
-        unless ($self->{params} && ref($self->{params}) eq "HASH") {
+        elsif (!$self->{params} || ref($self->{params}) ne "HASH") {
             # warn
             #     "No valid parameters were found, " .
             #     "parameters are required for validation";
+            foreach my $field (keys %{$self->{fields}}) {
+                my $this = $self->{fields}->{$field};
+                $this->{name}  = $field;
+                $this->{value} = $self->{params}->{$field};
+                # execute simple validation
+                $self->basic_validate($field, $this);
+                # custom validation shouldn't fire without params and data
+                # my @passed = ($self, $this, {});
+                # $self->{fields}->{$field}->{validation}->(@passed);
+            }
+        }
+        #default - probably unneccessary
+        else {
             foreach my $field (keys %{$self->{fields}}) {
                 my $this = $self->{fields}->{$field};
                 $this->{name}  = $field;
@@ -444,6 +513,13 @@ sub basic_filter {
                 uc $self->{params}->{$field};
         }
     }
+    # convert to camelcase
+    if ($filter eq "camelcase") {
+        if (defined $self->{params}->{$field}) {
+            $self->{params}->{$field} =
+                join " ", map (ucfirst, split (/\s/, lc($self->{params}->{$field})));
+        }
+    }
     # convert to titlecase
     if ($filter eq "titlecase") {
         if (defined $self->{params}->{$field}) {
@@ -490,9 +566,9 @@ sub basic_filter {
     if ($filter eq "trim") {
         if (defined $self->{params}->{$field}) {
             $self->{params}->{$field} =~
-                s/^\s+//o;
+                s/^\s+//g;
             $self->{params}->{$field} =~
-                s/\s+$//o;
+                s/\s+$//g;
         }
     }
     # use regex
@@ -515,6 +591,8 @@ sub Oogly {
     $code .= "our \$FIELDS  = \$PACKAGE::fields = {}; ";
     $code .= "our \$MIXINS  = \$PACKAGE::mixins = {}; ";
     
+    # fix load priority mixin, then field
+    
     while (my($key, $value) = each(%properties)) {
         die "$key is not a supported property"
             unless $key eq 'mixins' || $key eq 'fields';
@@ -523,12 +601,32 @@ sub Oogly {
                 $code .= "mixin('" . $key . "'," . Dumper($value) . ");";
             }
         }
+    }
+    
+    while (my($key, $value) = each(%properties)) {
+        die "$key is not a supported property"
+            unless $key eq 'mixins' || $key eq 'fields';
         if ($key eq 'fields') {
             while (my($key, $value) = each(%{$properties{fields}})) {
                 $code .= "field('" . $key . "'," . Dumper($value) . ");";
             }
         }
     } $code .= "1;";
+    
+    #while (my($key, $value) = each(%properties)) {
+    #    die "$key is not a supported property"
+    #        unless $key eq 'mixins' || $key eq 'fields';
+    #    if ($key eq 'mixins') {
+    #        while (my($key, $value) = each(%{$properties{mixins}})) {
+    #            $code .= "mixin('" . $key . "'," . Dumper($value) . ");";
+    #        }
+    #    }
+    #    if ($key eq 'fields') {
+    #        while (my($key, $value) = each(%{$properties{fields}})) {
+    #            $code .= "field('" . $key . "'," . Dumper($value) . ");";
+    #        }
+    #    }
+    #} $code .= "1;";
     
     eval $code or die $@;
     return $PACKAGE;
@@ -545,7 +643,7 @@ Oogly - A Data validation idea that just might be ideal!
 
 =head1 VERSION
 
-version 0.21
+version 0.31
 
 =head1 SYNOPSIS
 
@@ -583,7 +681,7 @@ reuse. The following is an example of that...
         mixin => 'default',
         validation => sub {
             my ($self, $this, $params) = @_;
-            my ($name, $value) = ($this->{label}, $this->{value});
+            my ($name, $value) = ($this->{label}, $params->{login});
             $self->error($this, "$name must contain at least one letter and number")
                 unless ($value =~ /[a-zA-Z]/ || $value =~ /[0-9]/);
         }
@@ -615,7 +713,7 @@ And now for my second and final act, using Oogly outside of a package.
                     mixin => 'default',
                     validation => sub {
                         my ($self, $this, $params) = @_;
-                        my ($name, $value) = ($this->{name}, $this->{value});
+                        my ($name, $value) = ($this->{name}, $params->{login});
                         $self->error($this, "field $name must contain at least one letter and number")
                             if ($value !~ /[a-zA-Z]/ && $value !~ /[0-9]/);
                     }
@@ -827,7 +925,7 @@ outside of a specific validation package.
 
 =head1 AUTHOR
 
-  Al Newkirk <awncorp@cpan.org>
+Al Newkirk <awncorp@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
